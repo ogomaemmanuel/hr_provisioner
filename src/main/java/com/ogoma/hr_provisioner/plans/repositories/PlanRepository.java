@@ -1,6 +1,6 @@
-package com.ogoma.hr_provisioner.subscription.repositories;
+package com.ogoma.hr_provisioner.plans.repositories;
 
-import com.ogoma.hr_provisioner.subscription.entities.PlanEntity;
+import com.ogoma.hr_provisioner.plans.entities.PlanEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
