@@ -1,6 +1,6 @@
-package com.ogoma.hr_provisioner.subscription.controllers;
+package com.ogoma.hr_provisioner.plans.controllers;
 
-import com.ogoma.hr_provisioner.subscription.services.PlanService;
+import com.ogoma.hr_provisioner.plans.services.PlanService;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
