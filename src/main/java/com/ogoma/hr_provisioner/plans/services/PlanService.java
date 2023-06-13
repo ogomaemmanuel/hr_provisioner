@@ -1,6 +1,6 @@
-package com.ogoma.hr_provisioner.subscription.services;
+package com.ogoma.hr_provisioner.plans.services;
 
-import com.ogoma.hr_provisioner.subscription.repositories.PlanRepository;
+import com.ogoma.hr_provisioner.plans.repositories.PlanRepository;
 import org.springframework.stereotype.Service;
 
 @Service
