@@ -1,2 +1,4 @@
-package com.ogoma.hr_provisioner.utils;public class holder {
+package com.ogoma.hr_provisioner.utils;
+
+public class holder {
 }
