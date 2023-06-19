@@ -58,10 +58,15 @@ public class PlanService {
 
 
         record.ifPresentOrElse(values->{
-            values.setArchive(true);
-            this.planRepository.save(values);
-            responder.put("message","Deleted successfully");
-            responder.put("status",200);
+            if(!values.getArchive()) {
+                values.setArchive(true);
+                this.planRepository.save(values);
+                responder.put("message", "Deleted successfully");
+                responder.put("status", 200);
+            }else{
+                responder.put("error","Record with the given id doesn't exists");
+                responder.put("status",400);
+            }
         },()->{
             responder.put("error","Record with given id doesn't exist");
             responder.put("status",400);
