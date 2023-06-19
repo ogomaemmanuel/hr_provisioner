@@ -17,7 +17,7 @@ public class PlanEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @Enumerated(EnumType.STRING)
     private Type type;
     private Integer amount;
 
@@ -28,6 +28,7 @@ public class PlanEntity {
 
     private Boolean archive;
 
+    @Enumerated(EnumType.STRING)
     private Status status;
 
     @CreationTimestamp
