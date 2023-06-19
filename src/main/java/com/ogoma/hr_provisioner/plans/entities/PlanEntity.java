@@ -1,6 +1,7 @@
 package com.ogoma.hr_provisioner.plans.entities;
 
 
+import com.ogoma.hr_provisioner.base.BaseEntity;
 import com.ogoma.hr_provisioner.plans.enums.Status;
 import com.ogoma.hr_provisioner.plans.enums.Type;
 import jakarta.persistence.*;
@@ -13,10 +14,7 @@ import java.util.List;
 
 
 @Entity
-public class PlanEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class PlanEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Type type;
     private Integer amount;
@@ -31,11 +29,6 @@ public class PlanEntity {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
 
     public Type getType() {
         return type;
@@ -53,13 +46,6 @@ public class PlanEntity {
         this.features = features;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public Integer getAmount() {
         return amount;
@@ -94,19 +80,4 @@ public class PlanEntity {
         this.status = status;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 }
