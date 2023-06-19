@@ -47,6 +47,7 @@ public class PlanService {
         var plan = this.planRepository.save(createAPlan(data));
         var respond = new HashMap<>();
         respond.put("data", data);
+        respond.put("status",201);
         return respond;
     }
 
@@ -60,8 +61,10 @@ public class PlanService {
             values.setArchive(true);
             this.planRepository.save(values);
             responder.put("message","Deleted successfully");
+            responder.put("status",200);
         },()->{
             responder.put("error","Record with given id doesn't exist");
+            responder.put("status",400);
         });
         return responder;
     }
@@ -72,14 +75,18 @@ public class PlanService {
         plan.ifPresentOrElse(results->{
             if(results.getArchive()){
                 respond.put("error","Record with the given id doesn't exist");
+                respond.put("status",400);
             }else{
                 respond.put("data", plan);
+                respond.put("status",200);
             }
         },()->{
             respond.put("error","Record with the given id doesn't exist");
+            respond.put("status",400);
         });
         return respond;
     }
+
 
     public List<PlanEntity> getAllPlans(PlanQuery query) {
         // RESET ARCHIVE TO FALSE
@@ -116,12 +123,15 @@ public class PlanService {
 
                 this.planRepository.save(result);
                 responder.put("data","Updated successfully");
+                responder.put("status",200);
             }else{
                 responder.put("error","Record with the given id doesn't exists");
+                responder.put("status",400);
             }
 
         },()->{
             responder.put("errors","Record with the given id doesn't exists");
+            responder.put("status",400);
         });
         return responder;
     }
