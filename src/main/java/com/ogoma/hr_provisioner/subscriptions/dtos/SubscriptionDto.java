@@ -1,2 +1,4 @@
-package com.ogoma.hr_provisioner.subscriptions.dtos;public class SubscriptionDto {
+package com.ogoma.hr_provisioner.subscriptions.dtos;
+
+public class SubscriptionDto {
 }

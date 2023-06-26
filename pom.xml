@@ -99,8 +99,6 @@
             <artifactId>temporal-sdk</artifactId>
             <version>${temporal.version}</version>
         </dependency>
-
-
     </dependencies>
 
     <build>
