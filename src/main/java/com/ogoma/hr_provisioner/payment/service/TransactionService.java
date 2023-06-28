@@ -104,8 +104,6 @@ public class TransactionService {
         sub.ifPresentOrElse(
                 result->{
                     var plan = result.getPlan();
-                    String MerchantRequestID = "85875-78957561-2";
-                    String CheckoutRequestID = "ws_CO_25062023084507412716276314";
                     var proceed = true;
                     LocalDateTime currentTime = LocalDateTime.now();
                     switch(result.getStatus()){
@@ -125,11 +123,11 @@ public class TransactionService {
                     }
 
                     if(proceed){
-                        this.mpesaPayPrompt(plan,result.getPhoneNumber());
+                        var mpesaResponse = this.mpesaPayPrompt(plan,result.getPhoneNumber());
                         var trans = new TransactionEntity();
                         trans.setSubscription(result);
-                        trans.setMerchantRequestID(MerchantRequestID);
-                        trans.setCheckoutRequestID(CheckoutRequestID);
+                        trans.setMerchantRequestID(mpesaResponse.getMerchantRequestID());
+                        trans.setCheckoutRequestID(mpesaResponse.getCheckoutRequestID());
                         this.transactionRepository.save(trans);
                         result.setStatus(Status.Pending);
                         this.subscriptionRepository.save(result);
