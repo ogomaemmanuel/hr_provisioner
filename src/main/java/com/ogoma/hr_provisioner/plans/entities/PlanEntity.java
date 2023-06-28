@@ -1,6 +1,7 @@
 package com.ogoma.hr_provisioner.plans.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ogoma.hr_provisioner.base.BaseEntity;
 import com.ogoma.hr_provisioner.plans.enums.Status;
 import com.ogoma.hr_provisioner.plans.enums.Type;
@@ -23,6 +24,7 @@ public class PlanEntity extends BaseEntity {
 
     @ElementCollection
     private List<String> features;
+
 
     private Boolean archive;
 

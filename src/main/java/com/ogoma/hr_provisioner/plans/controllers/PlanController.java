@@ -15,9 +15,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.ogoma.hr_provisioner.utils.helpers.FormatStatusCode.formatStatusCode;
+
 @RestController
 @RequestMapping("/plans")
-// STATUS CODES TO BE HANDLED LATER
 public class PlanController {
     private final PlanService planService;
 
@@ -33,32 +34,27 @@ public class PlanController {
     @PostMapping
     public ResponseEntity<HashMap<Object,Object>> addAPlan(@Valid @RequestBody PlanDto data){
         var record = this.planService.addAPlan(data);
-        return this.formatStatusCode(record);
+        return formatStatusCode(record);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<HashMap<Object,Object>> getSinglePlan(@PathVariable Long id){
         var record = this.planService.getSinglePlan(id);
-        return this.formatStatusCode(record);
+        return formatStatusCode(record);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<HashMap<Object,Object>> softDeleteAPlan(@PathVariable Long id){
         var successful = this.planService.softDeleteAPlan(id);
-        return this.formatStatusCode(successful);
+        return formatStatusCode(successful);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<HashMap<Object,Object>> updatePlan(@PathVariable Long id,@RequestBody PlanDto data){
         var results = this.planService.updateAPlan(id,data);
-        return this.formatStatusCode(results);
+        return formatStatusCode(results);
     }
 
-    public ResponseEntity<HashMap<Object,Object>> formatStatusCode(HashMap<Object,Object> response){
-        var status_code = response.get("status");
-        response.remove("status");
-        return ResponseEntity.status((Integer) status_code).body(response);
-    }
 
 
 
