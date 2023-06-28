@@ -1,9 +1,9 @@
-package com.ogoma.hr_provisioner.subscriptions.enums;
+package com.ogoma.hr_provisioner.payment.enums;
 
 public enum Status {
     Pending,
     Paid,
     Expired,
-
+    FailedPayment,
     Trial
 }
