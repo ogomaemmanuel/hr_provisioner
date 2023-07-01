@@ -99,8 +99,8 @@
             <artifactId>temporal-sdk</artifactId>
             <version>${temporal.version}</version>
         </dependency>
-    </dependencies>
 
+    </dependencies>
     <build>
         <plugins>
             <plugin>
@@ -115,6 +115,14 @@
                     </excludes>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.graalvm.buildtools</groupId>
+                <artifactId>native-maven-plugin</artifactId>
+            </plugin>
+
+
+
+
         </plugins>
     </build>
 

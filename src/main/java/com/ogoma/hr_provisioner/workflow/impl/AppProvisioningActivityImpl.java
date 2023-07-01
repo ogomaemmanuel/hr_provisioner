@@ -1,5 +1,6 @@
 package com.ogoma.hr_provisioner.workflow.impl;
 
+import com.ogoma.hr_provisioner.subscriptions.entities.SubscriptionEntity;
 import com.ogoma.hr_provisioner.workflow.AppProvisioningActivity;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
@@ -19,17 +20,19 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
     }
 
     @Override
-    public String createDataSchema(String clientName) {
+    public String createDataSchema(SubscriptionEntity subscriptionEntity) {
         return null;
     }
 
     @Override
-    public void createNamespace(String namespace) {
+    public void createNamespace(SubscriptionEntity subscriptionEntity) {
+        String namespace = String.format("sub-%d",subscriptionEntity.getId());
         this.kubernetesClient.namespaces().withName(namespace).create();
     }
 
     @Override
-    public void createSecrets(String namespace) {
+    public void createSecrets(SubscriptionEntity subscriptionEntity) {
+        String namespace = String.format("sub-%d",subscriptionEntity.getId());
         Secret secret = new SecretBuilder()
                 .withNewMetadata()
                 .withName("hr_secret")
@@ -43,7 +46,8 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
     }
 
     @Override
-    public void createConfigMaps(String namespace) {
+    public void createConfigMaps(SubscriptionEntity subscriptionEntity) {
+        String namespace = String.format("sub-%d",subscriptionEntity.getId());
         ConfigMap secret = new ConfigMapBuilder()
                 .withNewMetadata()
                 .withName("hr_config")
@@ -55,22 +59,25 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
     }
 
     @Override
-    public void createDeployment(String namespace) {
+    public void createDeployment(SubscriptionEntity subscriptionEntity) {
+        String namespace = String.format("sub-%d",subscriptionEntity.getId());
 
     }
 
     @Override
-    public void createService(String namespace) {
+    public void createService(SubscriptionEntity subscriptionEntity) {
+        String namespace = String.format("sub-%d",subscriptionEntity.getId());
 
     }
 
     @Override
-    public void createIngress(String namespace) {
+    public void createIngress(SubscriptionEntity subscriptionEntity) {
+        String namespace = String.format("sub-%d",subscriptionEntity.getId());
 
     }
 
     @Override
-    public void sendEmailToCustomer() {
+    public void sendEmailToCustomer(SubscriptionEntity subscriptionEntity) {
 
     }
 }

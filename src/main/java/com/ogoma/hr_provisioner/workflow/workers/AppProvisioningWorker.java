@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AppProvisioningWorker {
 
-    private static final String  workerQueueName="APP_PROVISIONING";
+    public static final String  APP_PROVISIONING_QUEUE="APP_PROVISIONING";
     private  WorkerFactory workerFactory;
     private  final AppProvisioningActivity appProvisioningActivity;
 
@@ -20,7 +20,7 @@ public class AppProvisioningWorker {
 
     @PostConstruct
    public void start() {
-       var worker = workerFactory.newWorker(workerQueueName);
+       var worker = workerFactory.newWorker(APP_PROVISIONING_QUEUE);
        worker.registerWorkflowImplementationTypes(AppProvisioningWorkflowImpl.class);
        worker.registerActivitiesImplementations(appProvisioningActivity);
        workerFactory.start();

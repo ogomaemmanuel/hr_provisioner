@@ -1,5 +1,6 @@
 package com.ogoma.hr_provisioner.workflow;
 
+import com.ogoma.hr_provisioner.subscriptions.entities.SubscriptionEntity;
 import io.temporal.activity.ActivityInterface;
 import io.temporal.activity.ActivityMethod;
 
@@ -7,26 +8,26 @@ import io.temporal.activity.ActivityMethod;
 public interface AppProvisioningActivity {
 
 
-    public String createDataSchema(String clientName);
+    public String createDataSchema(SubscriptionEntity subscriptionEntity);
     @ActivityMethod
-    public void createNamespace(String namespace);
+    public void createNamespace(SubscriptionEntity subscriptionEntity);
 
     @ActivityMethod
-    public void createSecrets(String namespace);
+    public void createSecrets(SubscriptionEntity subscriptionEntity);
 
     @ActivityMethod
-    public void createConfigMaps(String namespace);
+    public void createConfigMaps(SubscriptionEntity subscriptionEntity);
 
     @ActivityMethod
-    public void createDeployment(String namespace);
+    public void createDeployment(SubscriptionEntity subscriptionEntity);
 
     @ActivityMethod
-    public void createService(String namespace);
+    public void createService(SubscriptionEntity subscriptionEntity);
 
     @ActivityMethod
-    public void createIngress(String namespace);
+    public void createIngress(SubscriptionEntity subscriptionEntity);
 
     @ActivityMethod
-    public void sendEmailToCustomer();
+    public void sendEmailToCustomer(SubscriptionEntity subscriptionEntity);
 
 }
