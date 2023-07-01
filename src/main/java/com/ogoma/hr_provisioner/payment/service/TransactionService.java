@@ -96,9 +96,10 @@ public class TransactionService {
                         trans.setReceiptNumber((String) callbackMeta.get(1).getValue());
                         trans.setArchive(true);
                         this.mapExpiryDate(result);
+                        result.setStatus(Status.Paid);
                         trans.setSubscription(result);
                         this.transactionRepository.save(trans);
-                        result.setStatus(Status.Paid);
+
                         WorkflowOptions userRegistrationWorkflowOptions =
                                 WorkflowOptions.newBuilder()
                                         .setWorkflowId("Sub-" + result.getId())

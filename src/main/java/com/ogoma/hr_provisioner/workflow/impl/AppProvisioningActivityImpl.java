@@ -2,10 +2,7 @@ package com.ogoma.hr_provisioner.workflow.impl;
 
 import com.ogoma.hr_provisioner.subscriptions.entities.SubscriptionEntity;
 import com.ogoma.hr_provisioner.workflow.AppProvisioningActivity;
-import io.fabric8.kubernetes.api.model.ConfigMap;
-import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
-import io.fabric8.kubernetes.api.model.Secret;
-import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +24,9 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
     @Override
     public void createNamespace(SubscriptionEntity subscriptionEntity) {
         String namespace = String.format("sub-%d",subscriptionEntity.getId());
-        this.kubernetesClient.namespaces().withName(namespace).create();
+        NamespaceBuilder namespaceBuilder = new NamespaceBuilder();
+        namespaceBuilder.withNewMetadata().withName(namespace).endMetadata();
+        this.kubernetesClient.namespaces().create(namespaceBuilder.build());
     }
 
     @Override
