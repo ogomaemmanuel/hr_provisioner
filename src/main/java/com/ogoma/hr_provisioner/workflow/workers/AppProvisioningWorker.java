@@ -11,10 +11,11 @@ import org.springframework.stereotype.Component;
 public class AppProvisioningWorker {
 
     public static final String  APP_PROVISIONING_QUEUE="APP_PROVISIONING";
-    private  WorkerFactory workerFactory;
+    private final WorkerFactory workerFactory;
     private  final AppProvisioningActivity appProvisioningActivity;
 
-    public AppProvisioningWorker(AppProvisioningActivity appProvisioningActivity) {
+    public AppProvisioningWorker(WorkerFactory workerFactory, AppProvisioningActivity appProvisioningActivity) {
+        this.workerFactory = workerFactory;
         this.appProvisioningActivity = appProvisioningActivity;
     }
 
