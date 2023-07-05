@@ -8,7 +8,7 @@ import io.temporal.activity.ActivityMethod;
 public interface AppProvisioningActivity {
 
 
-    public String createDataSchema(SubscriptionEntity subscriptionEntity);
+    public void createDataSchema(SubscriptionEntity subscriptionEntity);
     @ActivityMethod
     public void createNamespace(SubscriptionEntity subscriptionEntity);
 
