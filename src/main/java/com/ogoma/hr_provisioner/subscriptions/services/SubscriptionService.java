@@ -3,6 +3,7 @@ package com.ogoma.hr_provisioner.subscriptions.services;
 import com.ogoma.hr_provisioner.payment.entities.TransactionEntity;
 import com.ogoma.hr_provisioner.payment.repositories.TransactionRepository;
 import com.ogoma.hr_provisioner.payment.service.TransactionService;
+import com.ogoma.hr_provisioner.plans.enums.Type;
 import com.ogoma.hr_provisioner.plans.repositories.PlanRepository;
 import com.ogoma.hr_provisioner.subscriptions.SubsciptionQuery;
 import com.ogoma.hr_provisioner.subscriptions.dtos.SubscriptionDto;
@@ -13,20 +14,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class SubscriptionService {
-
-//    @Value("${spring.mpesa.password}")
-//    private String password;
-//
-//
-//    @Value("${spring.mpesa.token}")
-//    private String token;
-//
-//    @Value("${spring.mpesa.callback}")
-//    private String callback;
 
     private final SubscriptionRepository subscriptionRepository;
     private final PlanRepository planRepository;
@@ -44,8 +37,6 @@ public class SubscriptionService {
 
     public HashMap<Object, Object> addASubscription(SubscriptionDto data) {
 
-
-
         // RESPONDER
         var responder = new HashMap<>();
 
@@ -58,52 +49,64 @@ public class SubscriptionService {
             subscription.setPlan(result);
             subscription.setFirstName(data.getFirstName());
             subscription.setLastName((data.getLastName()));
-            subscription.setSubDomain(data.getSubDomain());
             subscription.setPhoneNumber(data.getPhoneNumber());
 
             // CURRENT TIME
             LocalDateTime currentTime = LocalDateTime.now();
-            subscription.setStatus(Status.Pending);
 
-            AtomicBoolean proceed = new AtomicBoolean(true);
+            // VALIDATE SUBDOMAIN
+            var checkExistingSubscriptions = this.subscriptionRepository.findBySubDomain(data.getSubDomain());
+            checkExistingSubscriptions.ifPresentOrElse(
+                    present->{
+                        responder.put("error","SubDomain already taken.");
+                        responder.put("status",400);
+                    },
+                    ()->{
+                        subscription.setSubDomain(data.getSubDomain());
+                        subscription.setStatus(Status.Pending);
 
-            var existingRunningSubscription = subscriptionRepository.findTopByEmailAndArchiveOrderByCreatedAtDesc(data.getEmail(),false);
+                        AtomicBoolean proceed = new AtomicBoolean(true);
 
-            existingRunningSubscription.ifPresent(sub->{
-                switch (sub.getStatus()){
-                    case Paid:
-                        if(currentTime.compareTo(sub.getExpiryTime()) <= 0){
-                            responder.put("error","You have another running subscription, consider upgrading");
-                            responder.put("status",400);
-                            proceed.set(false);
+                        var existingRunningSubscription = subscriptionRepository.findTopByEmailAndArchiveOrderByCreatedAtDesc(data.getEmail(),false);
+
+                        existingRunningSubscription.ifPresent(sub->{
+                            switch (sub.getStatus()){
+                                case Paid:
+                                    if(currentTime.compareTo(sub.getExpiryTime()) <= 0){
+                                        responder.put("error","You have another running subscription, consider upgrading");
+                                        responder.put("status",400);
+                                        proceed.set(false);
+                                    }
+                                    break;
+                                case Pending:
+                                    responder.put("error","You have an unpaid subscription.");
+                                    responder.put("status",400);
+                                    proceed.set(false);
+                                    break;
+                                case FailedPayment:
+                                    responder.put("error","You have a subscription with a failed payment.");
+                                    responder.put("status",400);
+                                    proceed.set(false);
+                                    break;
+                            }
+                        });
+
+                        if(proceed.get()){
+                            var mpesaResponse = this.transactionService.mpesaPayPrompt(result,subscription.getPhoneNumber());
+                            var addedSubscription = this.subscriptionRepository.save(subscription);
+
+                            var trans = new TransactionEntity();
+                            trans.setSubscription(addedSubscription);
+                            trans.setMerchantRequestID(mpesaResponse.getMerchantRequestID());
+                            trans.setCheckoutRequestID(mpesaResponse.getCheckoutRequestID());
+                            this.transactionRepository.save(trans);
+                            responder.put("data", addedSubscription);
+                            responder.put("status", 201);
+
                         }
-                        break;
-                    case Pending:
-                        responder.put("error","You have an unpaid subscription.");
-                        responder.put("status",400);
-                        proceed.set(false);
-                        break;
-                    case FailedPayment:
-                        responder.put("error","You have a subscription with a failed payment.");
-                        responder.put("status",400);
-                        proceed.set(false);
-                        break;
-                }
-            });
 
-            if(proceed.get()){
-                var mpesaResponse = this.transactionService.mpesaPayPrompt(result,subscription.getPhoneNumber());
-                var addedSubscription = this.subscriptionRepository.save(subscription);
-
-                var trans = new TransactionEntity();
-                trans.setSubscription(addedSubscription);
-                trans.setMerchantRequestID(mpesaResponse.getMerchantRequestID());
-                trans.setCheckoutRequestID(mpesaResponse.getCheckoutRequestID());
-                this.transactionRepository.save(trans);
-                responder.put("data", addedSubscription);
-                responder.put("status", 201);
-
-            }
+                    }
+            );
 
 
         },()->{
@@ -199,9 +202,53 @@ public class SubscriptionService {
                     result.setPhoneNumber(data.getPhoneNumber());
                 }
 
-                this.subscriptionRepository.save(result);
-                responder.put("data","Updated successfully");
-                responder.put("status",200);
+                if (data.getPlanId()!=null) {
+                    // UPGRADING A SUBSCRIPTION
+                    if(Objects.equals(data.getPlanId(), result.getPlan().getId())){
+                        responder.put("error","Provide a different plan");
+                        responder.put("status",400);
+                    }else {
+                        var newPlan = this.planRepository.findById(data.getPlanId());
+                        newPlan.ifPresentOrElse(
+                                present -> {
+
+                                    switch (result.getPlan().getType()) {
+                                        case Monthly:
+                                            if (present.getType() == Type.Annual) {
+                                                // PROMPT PAYMENT
+                                                var mpesaResponse = this.transactionService.mpesaPayPrompt(present, result.getPhoneNumber());
+                                                result.setStatus(Status.Pending);
+                                                result.setPlan(present);
+                                                var trans = new TransactionEntity();
+                                                trans.setSubscription(result);
+                                                trans.setMerchantRequestID(mpesaResponse.getMerchantRequestID());
+                                                trans.setCheckoutRequestID(mpesaResponse.getCheckoutRequestID());
+                                                this.transactionRepository.save(trans);
+                                                this.subscriptionRepository.save(result);
+                                                responder.put("message", "Upgrade Processed successfully");
+                                                responder.put("status", 200);
+                                            }else{
+                                                responder.put("error","Can't downgrade");
+                                                responder.put("status",400);
+                                            }
+                                            break;
+                                        case Annual:
+                                            responder.put("error","you have the max subscription");
+                                            responder.put("status",400);
+                                            break;
+                                    }
+                                },
+                                () -> {
+                                    responder.put("error", "Provided plan doesn't exists");
+                                    responder.put("status", 400);
+                                }
+                        );
+                    }
+                }else {
+                    this.subscriptionRepository.save(result);
+                    responder.put("message", "Updated successfully");
+                    responder.put("status", 200);
+                }
             }else{
                 responder.put("error","Record with the given id doesn't exists");
                 responder.put("status",400);
@@ -231,27 +278,39 @@ public class SubscriptionService {
             subscription.setPlan(result);
             subscription.setFirstName(data.getFirstName());
             subscription.setLastName((data.getLastName()));
-            subscription.setSubDomain(data.getSubDomain());
             subscription.setPhoneNumber(data.getPhoneNumber());
 
-            var existingTrialSubscription = subscriptionRepository.findTopByEmailOrderByCreatedAtDesc(data.getEmail());
+            // VALIDATE THAT THE SELECTED DOMAIN ISN'T IN USE
+            var userSelectedSubdomain = data.getSubDomain() + "-trial";
+            var checkExisingTrial = this.subscriptionRepository.findBySubDomainAndExpiryTimeGreaterThanEqualAndStatus(userSelectedSubdomain,currentTime, Status.Trial);
+            checkExisingTrial.ifPresentOrElse(
+                    present->{
+                        responder.put("error","SubDomain already taken!");
+                        responder.put("status",400);
+                    },
+                    ()->{
+                        subscription.setSubDomain(userSelectedSubdomain);
+                        var existingTrialSubscription = subscriptionRepository.findTopByEmailOrderByCreatedAtDesc(data.getEmail());
 
-            existingTrialSubscription.ifPresentOrElse(trial->{
-                var expired = currentTime.compareTo(trial.getExpiryTime());
-                if (expired <= 0) {
-                    responder.put("error","Your trial hasn't yet expired.");
-                    responder.put("status",400);
-                }else {
-                    responder.put("error", "You already used up your free trial");
-                    responder.put("status", 400);
-                }
-            },()->{
-                subscription.setStatus(Status.Trial);
-                subscription.setExpiryTime(currentTime.plusSeconds(10));
-                this.subscriptionRepository.save(subscription);
-                responder.put("message","You have successfully subscribed to your free trial.");
-                responder.put("status",201);
-            });
+                        existingTrialSubscription.ifPresentOrElse(trial->{
+                            var expired = currentTime.compareTo(trial.getExpiryTime());
+                            if (expired <= 0) {
+                                responder.put("error","Your trial hasn't yet expired.");
+                                responder.put("status",400);
+                            }else {
+                                responder.put("error", "You already used up your free trial");
+                                responder.put("status", 400);
+                            }
+                        },()->{
+                            subscription.setStatus(Status.Trial);
+                            subscription.setExpiryTime(currentTime.plusDays(14));
+                            this.subscriptionRepository.save(subscription);
+                            responder.put("message","You have successfully subscribed to your free trial.");
+                            responder.put("status",201);
+                        });
+                    }
+            );
+            subscription.setSubDomain(data.getSubDomain() + "-trial");
 
 
 
