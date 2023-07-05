@@ -13,8 +13,10 @@ import org.springframework.stereotype.Component;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+
 
 @Component
 public class AppProvisioningActivityImpl implements AppProvisioningActivity {
@@ -31,7 +33,7 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
     public void createDataSchema(SubscriptionEntity subscriptionEntity) {
         String schemaName = generateSchemaName(subscriptionEntity);
         try (Connection connection = DriverManager.getConnection(
-                this.hrAppConfigProperties.getDbHost(),
+                "jdbc:mysql://" + this.hrAppConfigProperties.getDbHost(),
                 this.hrAppConfigProperties.getDbUsername(), this.hrAppConfigProperties.getDbPassword())) {
             String createSchemaSql = "CREATE SCHEMA IF NOT EXISTS " + schemaName;
             connection.createStatement().execute(createSchemaSql);
@@ -48,6 +50,10 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
         this.kubernetesClient.namespaces().resource(namespaceBuilder.build()).create();
     }
 
+    private String encodeToBase64(String input){
+        return Base64.getEncoder().encodeToString(input.getBytes());
+    }
+
     @Override
     public void createSecrets(SubscriptionEntity subscriptionEntity) {
         String namespace = String.format("sub-%d", subscriptionEntity.getId());
@@ -56,10 +62,12 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
                 .withName("hr-secret")
                 .withNamespace(namespace)
                 .endMetadata()
+                .addToData("SERVER_PORT",this.encodeToBase64(this.hrAppConfigProperties.getPort()))
                 .addToData("DB_HOST",
-                        this.hrAppConfigProperties.getDbHost())
-                .addToData("DB_SCHEMA", generateSchemaName(subscriptionEntity))
-                .addToData("DB_PASSWORD", this.hrAppConfigProperties.getDbPassword())
+                        this.encodeToBase64(this.hrAppConfigProperties.getDbHost()))
+                .addToData("DB_SCHEMA", this.encodeToBase64(generateSchemaName(subscriptionEntity)))
+                .addToData("DB_PASSWORD",
+                        this.encodeToBase64(this.hrAppConfigProperties.getDbPassword()))
                 .build();
         this.kubernetesClient.secrets().resource(secret).create();
     }
@@ -98,7 +106,7 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
                 .withNewSpec()
                 .addNewContainer()
                 .withName("hr-app")
-                .withImage("nginx:latest")
+                .withImage("mudho/hr")
                 .withEnvFrom(new EnvFromSourceBuilder()
                         .withSecretRef(new SecretEnvSourceBuilder()
                                 .withName("hr-secret")
@@ -127,7 +135,7 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
                 .withName("http")
                 .withProtocol("TCP")
                 .withPort(8080)
-                .withNewTargetPort(8080)
+                .withNewTargetPort(Integer.valueOf(this.hrAppConfigProperties.getPort()))
                 .endPort()
                 .withSelector(new HashMap<String, String>() {{
                     put("app", "hr-app");
@@ -148,6 +156,7 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
                 .withLabels(Map.of("app", "hr-app"))
                 .endMetadata()
                 .withNewSpec()
+                .withIngressClassName("nginx")
                 .addNewRule()
                 .withHost(subDomain)
                 .withNewHttp()
@@ -155,7 +164,7 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
                 .withPath("/")
                 .withPathType("Prefix")
                 .withNewBackend()
-                .withService((new IngressServiceBackendBuilder().withName("http").withNewPort("", 8080).build()))
+                .withService((new IngressServiceBackendBuilder().withName("hr-app-service").withNewPort("", 8080).build()))
                 .endBackend()
                 .endPath()
                 .endHttp()
@@ -172,7 +181,7 @@ public class AppProvisioningActivityImpl implements AppProvisioningActivity {
     }
 
     private String generateSchemaName(SubscriptionEntity subscriptionEntity) {
-        String schemaName = String.format("sub-%d", subscriptionEntity.getId());
+        String schemaName = String.format("sub_%d", subscriptionEntity.getId());
         return schemaName;
     }
 }

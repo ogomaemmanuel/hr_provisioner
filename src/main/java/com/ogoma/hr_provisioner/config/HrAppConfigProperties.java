@@ -20,6 +20,16 @@ public class HrAppConfigProperties {
 
     private String baseDomain;
 
+    private String port;
+
+    public String getPort() {
+        return port;
+    }
+
+    public void setPort(String port) {
+        this.port = port;
+    }
+
     public String getDbHost() {
         return dbHost;
     }
