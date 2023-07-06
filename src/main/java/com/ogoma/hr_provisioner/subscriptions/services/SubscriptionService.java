@@ -65,46 +65,16 @@ public class SubscriptionService {
                         subscription.setSubDomain(data.getSubDomain());
                         subscription.setStatus(Status.Pending);
 
-                        AtomicBoolean proceed = new AtomicBoolean(true);
+                        var mpesaResponse = this.transactionService.mpesaPayPrompt(result,subscription.getPhoneNumber());
+                        var addedSubscription = this.subscriptionRepository.save(subscription);
 
-                        var existingRunningSubscription = subscriptionRepository.findTopByEmailAndArchiveOrderByCreatedAtDesc(data.getEmail(),false);
-
-                        existingRunningSubscription.ifPresent(sub->{
-                            switch (sub.getStatus()){
-                                case Paid:
-                                    if(currentTime.compareTo(sub.getExpiryTime()) <= 0){
-                                        responder.put("error","You have another running subscription, consider upgrading");
-                                        responder.put("status",400);
-                                        proceed.set(false);
-                                    }
-                                    break;
-                                case Pending:
-                                    responder.put("error","You have an unpaid subscription.");
-                                    responder.put("status",400);
-                                    proceed.set(false);
-                                    break;
-                                case FailedPayment:
-                                    responder.put("error","You have a subscription with a failed payment.");
-                                    responder.put("status",400);
-                                    proceed.set(false);
-                                    break;
-                            }
-                        });
-
-                        if(proceed.get()){
-                            var mpesaResponse = this.transactionService.mpesaPayPrompt(result,subscription.getPhoneNumber());
-                            var addedSubscription = this.subscriptionRepository.save(subscription);
-
-                            var trans = new TransactionEntity();
-                            trans.setSubscription(addedSubscription);
-                            trans.setMerchantRequestID(mpesaResponse.getMerchantRequestID());
-                            trans.setCheckoutRequestID(mpesaResponse.getCheckoutRequestID());
-                            this.transactionRepository.save(trans);
-                            responder.put("data", addedSubscription);
-                            responder.put("status", 201);
-
-                        }
-
+                        var trans = new TransactionEntity();
+                        trans.setSubscription(addedSubscription);
+                        trans.setMerchantRequestID(mpesaResponse.getMerchantRequestID());
+                        trans.setCheckoutRequestID(mpesaResponse.getCheckoutRequestID());
+                        this.transactionRepository.save(trans);
+                        responder.put("data", addedSubscription);
+                        responder.put("status", 201);
                     }
             );
 
