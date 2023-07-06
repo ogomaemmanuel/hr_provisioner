@@ -3,6 +3,7 @@ package com.ogoma.hr_provisioner.payment.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.ogoma.hr_provisioner.payment.dtos.MpesaLogin;
 import com.ogoma.hr_provisioner.payment.dtos.PaymentDTO;
 import com.ogoma.hr_provisioner.payment.entities.TransactionEntity;
 import com.ogoma.hr_provisioner.payment.enums.Status;
@@ -26,9 +27,8 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 import static com.ogoma.hr_provisioner.workflow.workers.AppProvisioningWorker.APP_PROVISIONING_QUEUE;
 
@@ -36,14 +36,14 @@ import static com.ogoma.hr_provisioner.workflow.workers.AppProvisioningWorker.AP
 public class TransactionService {
 
     // MPESA CONFIGS
-    @Value("${mpesa.bearer}")
-    private String mpesaBearer;
+    @Value("${mpesa.consumer.key}")
+    private String mpesaConsumerKey;
 
-    @Value("${mpesa.password}")
-    private String mpesaPassword;
+    @Value("${mpesa.consumer.secret}")
+    private String mpesaConsumerSecret;
 
-    @Value("${mpesa.timestamp}")
-    private String mpesaTimestamp;
+    @Value("${mpesa.pass.key}")
+    private String mpesaPassKey;
 
 
     @Value("${mpesa.callback}")
@@ -164,17 +164,45 @@ public class TransactionService {
         return responder;
     }
 
+    public MpesaLogin mpesaLogin(){
+        try{
+            var authToken = Base64.getEncoder().encodeToString((mpesaConsumerKey + ":" + mpesaConsumerSecret).getBytes());
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "Basic " + authToken);
+            HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(headers);
+            var resp = restTemplate.exchange("https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials", HttpMethod.GET, httpEntity, MpesaLogin.class);
+            var responseCode = resp.getStatusCode().value();
+            if (responseCode != 200) {
+                throw new IOException("Request failed with response code: " + responseCode);
+            }
+            return resp.getBody();
+
+        }catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public MpesaImmediateResponse mpesaPayPrompt(PlanEntity result, String phonenumber) {
+        // GET TOKEN
+        MpesaLogin mpesaCreds = this.mpesaLogin();
+        LocalDateTime now = LocalDateTime.now();
+
+        // Create timestamp
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = now.format(formatter);
+
+        var password = Base64.getEncoder().encodeToString(("174379" + mpesaPassKey + timestamp).getBytes());
+
         try {
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
-            headers.add("Authorization", "Bearer " + mpesaBearer);
+            headers.add("Authorization", "Bearer " + mpesaCreds.getAccessToken());
             headers.add("Content-Type", "application/json");
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("BusinessShortCode", 174379);
-            requestBody.put("Password", mpesaPassword);
-            requestBody.put("Timestamp", mpesaTimestamp);
+            requestBody.put("Password", password);
+            requestBody.put("Timestamp", timestamp);
             requestBody.put("TransactionType", "CustomerPayBillOnline");
             requestBody.put("Amount", result.getAmount());
             requestBody.put("PartyA", phonenumber);
