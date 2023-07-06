@@ -55,7 +55,7 @@ public class SubscriptionService {
             LocalDateTime currentTime = LocalDateTime.now();
 
             // VALIDATE SUBDOMAIN
-            var checkExistingSubscriptions = this.subscriptionRepository.findBySubDomain(data.getSubDomain());
+            var checkExistingSubscriptions = this.subscriptionRepository.findBySubDomainAndArchive(data.getSubDomain(),false);
             checkExistingSubscriptions.ifPresentOrElse(
                     present->{
                         responder.put("error","SubDomain already taken.");
