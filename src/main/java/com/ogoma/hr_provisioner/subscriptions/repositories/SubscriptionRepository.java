@@ -15,5 +15,5 @@ public interface SubscriptionRepository extends BaseRepository<SubscriptionEntit
 
    public Optional<SubscriptionEntity> findTopByEmailOrderByCreatedAtDesc(String email);
    public Optional<SubscriptionEntity> findBySubDomainAndExpiryTimeGreaterThanEqualAndStatus(String subDomain, LocalDateTime currentDate, Status status);
-   public Optional<SubscriptionEntity> findBySubDomain(String subDomain);
+   public Optional<SubscriptionEntity> findBySubDomainAndArchive(String subDomain,boolean archive);
 }
