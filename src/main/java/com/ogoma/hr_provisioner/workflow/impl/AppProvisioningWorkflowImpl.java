@@ -20,6 +20,12 @@ public class AppProvisioningWorkflowImpl implements AppProvisioningWorkflow {
                     .build());
     @Override
     public void startProvisioning(SubscriptionEntity subscriptionEntity) {
+        provisioningActivity.createDataSchema(subscriptionEntity);
         provisioningActivity.createNamespace(subscriptionEntity);
+        provisioningActivity.createSecrets(subscriptionEntity);
+        provisioningActivity.createDeployment(subscriptionEntity);
+        provisioningActivity.createService(subscriptionEntity);
+        provisioningActivity.createIngress(subscriptionEntity);
+        provisioningActivity.sendEmailToCustomer(subscriptionEntity);
     }
 }

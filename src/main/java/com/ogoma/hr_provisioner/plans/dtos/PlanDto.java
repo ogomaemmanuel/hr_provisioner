@@ -2,6 +2,8 @@ package com.ogoma.hr_provisioner.plans.dtos;
 
 import com.ogoma.hr_provisioner.plans.enums.Status;
 import com.ogoma.hr_provisioner.plans.enums.Type;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -10,6 +12,7 @@ import java.util.List;
 
 public class PlanDto {
     @NotNull(message = "Plan Type is required.")
+    @Enumerated(EnumType.STRING)
     private Type type;
     @NotNull(message = "Plan Amount is required.")
     private Integer amount;
@@ -17,6 +20,7 @@ public class PlanDto {
     private String name;
     private List<String> features;
     @NotNull(message = "Plan Status is required.")
+    @Enumerated(EnumType.STRING)
     private Status status;
 
     public Type getType() {
